@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hasil Ujian Group A</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; margin: 0; padding: 20px; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+        .container { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 100%; max-width: 580px; text-align: center; }
+        h2 { color: #333; margin-bottom: 20px; }
+        input[type="text"] { width: 100%; padding: 12px; margin: 10px 0; border: 2px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 16px; text-align: center; }
+        input[type="text"]:focus { border-color: #4CAF50; outline: none; }
+        button { background-color: #4CAF50; color: white; border: none; padding: 12px 20px; font-size: 16px; border-radius: 8px; cursor: pointer; width: 100%; font-weight: bold; }
+        button:hover { background-color: #45a049; }
+        .result-box { display: none; margin-top: 25px; border-top: 2px dashed #ddd; padding-top: 20px; text-align: left; }
+        .result-box h3 { text-align: center; color: #4CAF50; margin-top: 0; text-transform: uppercase; }
+        .score-item { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #eee; font-size: 15px; }
+        .total { font-weight: bold; color: #000; font-size: 18px; border-bottom: 2px solid #4CAF50; }
+        .error { color: red; margin-top: 15px; font-weight: bold; display: none; }
+        .esai-box { margin-top: 20px; background: #fffde7; padding: 15px; border-radius: 8px; border-left: 4px solid #fbc02d; }
+        .esai-title { font-weight: bold; color: #f57f17; margin-bottom: 15px; font-size: 15px; border-bottom: 1px solid #fbc02d; padding-bottom: 5px; }
+        .esai-item { margin-bottom: 15px; font-size: 14px; line-height: 1.6; border-bottom: 1px dashed #e0e0e0; padding-bottom: 12px; }
+        .esai-item:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+        .soal-num { font-weight: bold; color: #e65100; background: #ffe0b2; padding: 2px 6px; border-radius: 4px; font-size: 12px; }
+        .wrong { color: #c62828; text-decoration: line-through; font-weight: 500; }
+        .correct { color: #2e7d32; font-weight: bold; }
+        .note { color: #424242; font-style: italic; display: block; margin-top: 4px; background: #fff; padding: 4px 8px; border-radius: 4px; border-left: 3px solid #757575; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Hasil Group A (only group A)</h2>
+    <p>Masukkan PIN 6-digit Anda untuk melihat hasil evaluasi:</p>
+    <input type="text" id="pinInput" placeholder="">
+    <button onclick="cekNilai()">LIHAT HASIL</button>
+
+    <p id="errorMessage" class="error">PIN Salah atau Tidak Ditemukan!</p>
+
+    <!-- Tempat Menampilkan Hasil -->
+    <div id="resultBox" class="result-box">
+        <h3 id="resNama">Nama Siswa</h3>
+        <div class="score-item"><span>听力 (Listening)</span><span id="resL">0</span></div>
+        <div class="score-item"><span>阅读 (Reading)</span><span id="resR">0</span></div>
+        <div class="score-item"><span>写字 (Writing)</span><span id="resW">0</span></div>
+        <div class="score-item total"><span>TOTAL SCORE</span><span id="resTotal">0</span></div>
+        
+        <!-- Catatan Evaluasi Esai -->
+        <div class="esai-box" id="esaiBox">
+            <div class="esai-title">📝 Analisis Kesalahan & Koreksi Esai:</div>
+            <div id="esaiList"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+const dataSiswa = {
+    "ana123": { 
+        nama: "ANA PUTRI", l: 72, r: 92, w: 85, t: 249,
+        esai: [
+            { no: "77", w: "他们还学习英语吗?", c: "他们也学习英语吗?", n: "Kosakata: 还 artinya masih, 'juga' tunggal harus pakai 也." },
+            { no: "78", w: "你的教室...", c: "你的班...", n: "Kosakata: 教室 itu ruang fisik gedung, bukan kelas angkatan." },
+            { no: "82", w: "前边的那个人是一个老师", c: "那个人前边是一位老师", n: "Grammar: Posisi kata petunjuk lokasi terbalik." }
+        ]
+    },
+    "indri123": { 
+        nama: "ANDI INDRI WAHDINI MAKKASAU", l: 88, r: 86, w: 81, t: 255,
+        esai: [
+            { no: "76", w: "你的同学是那国人?", c: "你的同学is哪国人?", n: "Hanzi: Salah pilih kata penunjuk. 那 (itu) vs 哪 (mana)." },
+            { no: "78", w: "你的教师...", c: "你的班...", n: "Kosakata: 教师 artinya guru (profesi), harusnya kelas (班)." },
+            { no: "80", w: "商店在中文 di 银行旁边", c: "商店在中国银行旁边", n: "Kosakata: 中文 itu bahasa Mandarin, Bank China = 中国银行." },
+            { no: "85", w: "我们都怎么一起去学校?", c: "我们一起去学校怎么样?", n: "Grammar: Salah meletakkan kata tanya saran di tengah kalimat." }
+        ]
+    },
+    "fera123": { 
+        nama: "FERAWATI", l: 84, r: 88, w: 96, t: 268,
+        esai: [
+            { no: "78", w: "你的课有多少个法国的留学生", c: "你的班有多少个法国留学生?", n: "Kosakata: 课 artinya jam kuliah/pelajaran, kelas orang = 班." }
+        ]
+    },
+    "fikar123": { 
+        nama: "FIKAR KARMIADI DIMAN", l: 76, r: 88, w: 81, t: 245,
+        esai: [
+            { no: "76", w: "你的同学is那国人?", c: "你的同学is哪国人?", n: "Hanzi: Salah pilih kata penunjuk. 那 (itu) vs 哪 (mana)." },
+            { no: "79", w: "我想买一斤苹果", c: "我想买一公斤苹果", n: "Kosakata: 一斤 hanya 0,5 kg. Satu kilo penuh = 一公斤." },
+            { no: "82", w: "那个人前边是一老师", c: "那个人前边是一个/一位老师", n: "Grammar: Kurang kata bantu bilangan satuan (Measure Word)." },
+            { no: "83", w: "我有一个西瓜,也有两个草莓", c: "....还有两个草莓", n: "Kosakata: Tambahan objek baru lebih alami pakai 还有." },
+            { no: "85", w: "我们都怎么一起去学校?", c: "我们一起去学校怎么样?", n: "Grammar: Struktur kalimat tanya saran rusak di tengah." }
+        ]
+    },
+    "feby123": { 
+        nama: "GORETTI FEBY PARESSA", l: 80, r: 84, w: 69, t: 233,
+        esai: [
+            { no: "77", w: "你们也学习英文吗?", c: "他们也学习英语吗?", n: "Kosakata: Salah subjek, 你们 artinya kalian, soal meminta mereka." },
+            { no: "78", w: "你的教师...", c: "你的班...", n: "Kosakata: Menggunakan kata 教师 (guru) sebagai pengganti kelas." },
+            { no: "80", w: "上点在中的银行旁边", c: "商店在中国银行旁边", n: "Hanzi: Typo parah pada penulisan karakter 商店 dan 中国." },
+            { no: "83", w: "我有一个西瓜还有两草莓", c: "....还有两个...", n: "Grammar: Angka 两 wajib diikuti kata satuan 个." },
+            { no: "85", w: "我们都怎么去学校?", c: "我们一起去学校怎么样?", n: "Grammar: Kata 'bersama' (一起) hilang dan struktur salah." },
+            { no: "93", w: "商店去不想儿子", c: "儿子不想去商店", n: "Grammar: Struktur menyusun kata terbalik total." },
+            { no: "94", w: "两百块五毛三分", c: "两百块三分五毛", n: "Grammar: Urutan satuan uang terbalik (块→毛→分)." }
+        ]
+    },
+    "arin123": { 
+        nama: "INTAN ARINDIAH", l: 80, r: 78, w: 60, t: 218,
+        esai: [
+            { no: "78", w: "你在留学生多少", c: "你的班有多少个法国留学生?", n: "Grammar: Struktur kalimat rusak berat dan acak-acakan." },
+            { no: "80", w: "商店在中银行旁边", c: "商店在中国银行旁边", n: "Kosakata: Penulisan nama bank disingkat tidak baku." },
+            { no: "81", w: "里边体育馆有卫生间", c: "体育馆里有卫生间", n: "Grammar: Kata arah (里) wajib diletakkan setelah tempat." },
+            { no: "82", w: "那个人在老师前边", c: "个人前边是那一个老师", n: "Grammar: Makna terbalik (artinya menjadi: orang itu di depan guru)." },
+            { no: "83", w: "我有西瓜还两个莓果", c: "我有一个西瓜,还有两个草莓", n: "Kosakata: Satuan hilang dan nama stroberi salah kata." },
+            { no: "87", w: "您贵姓请问?", c: "请问您贵姓?", n: "Grammar: Kata permisi (请问) mutlak di awal kalimat." },
+            { no: "92", w: "他们是都医生吗?", c: "他们... 统一都是... -> 他们都是...", n: "Grammar: Kata 都 harus diletakkan sebelum 是." },
+            { no: "93", w: "商店不想去儿子", c: "儿子不想去商店", n: "Grammar: Urutan subjek utama terbalik ke belakang." },
+            { no: "95", w: "钱水一杯多少?", c: "一杯水多少钱?", n: "Grammar: Struktur tanya harga terbalik total." }
+        ]
+    },
+    "mutia123": { 
+        nama: "MUTIA DWITA PUTRI M.", l: 72, r: 82, w: 65, t: 219,
+        esai: [
+            { no: "77", w: "他们 juga 学习英语?", c: "他们也学习英语吗?", n: "Grammar: Lupa menulis partikel tanya 吗 di akhir kalimat." },
+            { no: "78", w: "法国留学生有多少在你的教学?", c: "你的班有多少个法国留学生?", n: "Grammar/Kosakata: Struktur keterangan tempat salah dan rancu." },
+            { no: "79", w: "我想买一公斤苹果", c: "我想买一个公斤苹果", n: "Grammar: Double kata satuan (tidak perlu memakai 个 sebelum 公斤)." },
+            { no: "80", w: "商店在中银行旁边", c: "商店在中国银行旁边", n: "Kosakata: Penulisan nama bank terpotong tidak baku." },
+            { no: "82", w: "那个人前边是一位老师", c: "一个人旁边是一个老师", n: "Kosakata: Menerjemahkan 'di samping seseorang', bukan 'di depan'." },
+            { no: "83", w: "我有一个西瓜和两草莓", c: "...还有两个草莓", n: "Grammar: Kata hubung kurang tepat dan angka 两 kurang 个." },
+            { no: "90", w: "你的学校有个多少 student?", c: "你的学校有多少个学生?", n: "Grammar: Posisi kata tanya 多少 terbalik di belakang 个." }
+        ]
+    },
+    "123458": { 
+        nama: "NOVI SABRINA", l: 76, r: 74, w: 69, t: 219,
+        esai: [
+            { no: "78", w: "在你的教师...", c: "你的班...", n: "Kosakata: 教师 artinya guru, keterangan tempat salah posisi." },
+            { no: "79", w: "我有卖一公斤苹果。", c: "我想买一公斤苹果", n: "Kosakata: Terbalik mengartikan 'ingin membeli' jadi 'ada menjual'." },
+            { no: "80", w: "商店在中银行旁边。", c: "商店在中国银行旁边。", n: "Kosakata: Penulisan nama bank kurang lengkap." },
+            { no: "82", w: "这人里边是一个老师。", c: "那个人前边是一位老师。", n: "Kosakata: Salah menerjemahkan 'di depan orang itu'." },
+            { no: "85", w: "我们都怎么一起去学校?", c: "我们一起去学校怎么样?", n: "Grammar: Salah posisi kata tanya saran di tengah kalimat." },
+            { no: "87", w: "请问贵姓您?", c: "请问您贵姓?", n: "Grammar: Susunan subjek 您 terbalik ke ekor." },
+            { no: "95", w: "钱一杯多少水?", c: "一杯水多少钱?", n: "Grammar: Pola kalimat tanya harga rusak total." }
+        ]
+    },
+    "dilla123": { 
+        nama: "NURFADILLA", l: 72, r: 78, w: 49, t: 199,
+        esai: [
+            { no: "76", w: "你的同学is哪国人?", c: "你的同学is那国人?", n: "Hanzi: Menggunakan Hanzi 那 (itu), harusnya 哪 (mana)." },
+            { no: "78", w: "你教室有多个留学生?", c: "你的班有多少个法国留学生?", n: "Kosakata: Kata 'Prancis' (法国) dan 'Berapa banyak' (多少) hilang." },
+            { no: "79", w: "我想买公斤苹果", c: "我想买一公斤苹果", n: "Grammar: Kurang angka 一 (satu) sebelum kata satuan berat." },
+            { no: "80", w: "商店在总过银行旁边", c: "商店在中国银行旁边", n: "Hanzi: Typo parah pada penulisan kata 中国 (tertulis 总过)." },
+            { no: "81", w: "运动楼里面有家卫生间", c: "体育馆里面有一个卫生间", n: "Kosakata/Grammar: Salah istilah tempat, dan satuan toilet harusnya 个." },
+            { no: "82", w: "人们前面是老师", c: "那个人前边是一个老师", n: "Grammar: Menerjemahkan jadi 'orang-orang' (人们) dan kurang satuan 一个." },
+            { no: "83", w: "我个四瓜还有两个没凑", c: "我有一个西瓜还有两个草莓", n: "Hanzi: Typo parah merusak karakter 西瓜 dan 草莓." },
+            { no: "84", w: "我们是同学 mereka 对吗?", c: "他们是你们的同学对吗?", n: "Grammar: Struktur acak-acakan dan subjek tertukar terbalik." },
+            { no: "85", w: "我们多一起去学校怎么样?", c: "我们都一起...", n: "Hanzi: Salah menulis kata 'semua' (都 tertulis 多)." },
+            { no: "87", w: "您请问贵姓?", c: "请问您贵姓?", n: "Grammar: Kata permisi 请问 salah ditaruh setelah subjek." },
+            { no: "92", w: "也们统一都是...", c: "他们都是医生吗?", n: "Grammar: Kata 都 wajib ditulis sebelum kata 是." },
+            { no: "93", w: "不想去儿子商店", c: "儿子不想去商店", n: "Grammar: Struktur menyusun kata terbalik total." },
+            { no: "95", w: "一杯多少水钱?", c: "一杯水多少钱?", n: "Grammar: Struktur kalimat tanya harga terbalik di belakang." }
+        ]
+    },
+    "mila123": { 
+        nama: "NURMILA", l: 72, r: 76, w: 68, t: 216,
+        esai: [
+            { no: "78", w: "你教室的法国留学生多少?", c: "你的班有多少个法国留学生?", n: "Kosakata/Grammar: Memakai kata 教师 dan struktur tanyanya menggantung." },
+            { no: "80", w: "商店在中银行旁边", c: "商店在中国银行旁边", n: "Kosakata: Penulisan nama bank terpotong tidak baku." },
+            { no: "81", w: "在体育馆里要一個卫生间", c: "体育馆里有一个卫生间", n: "Kosakata: Memakai kata 要 (mau/ingin) untuk arti 'ada' (有)." },
+            { no: "82", w: "那个人前是一个老师", c: "那个人前边是一个老师", n: "Grammar: Kata tunjuk arah tidak lengkap (kurang 边)." },
+            { no: "85", w: "我们一起去多怎么样?", c: "我们都一起...", n: "Grammar: Kata 多 salah posisi, harusnya 都 setelah subjek." },
+            { no: "93", w: "去商店不想儿子", c: "儿子不想去商店", n: "Grammar: Struktur menyusun kata terbalik total." },
+            { no: "95", w: "钱多少一杯水?", c: "一杯水多少钱?", n: "Grammar: Struktur tanya harga terbalik." },
+            { no: "97", w: "一本书和书包里有一个苹果", c: "书包里有一本书...", n: "Grammar: Keterangan tempat wajib diletakkan di depan kalimat." }
+        ]
+    },
+    "jan123": { 
+        nama: "RAUDATUL JANNAH", l: 72, r: 84, w: 86, t: 242,
+        esai: [
+            { no: "80", w: "商店在中银行旁边。", c: "商店在中国银行旁边。", n: "Kosakata: Singkatan nama instansi bank tidak baku." },
+            { no: "85", w: "我们都怎么一起去学校?", c: "我们一起去学校怎么样?", n: "Grammar: Struktur kalimat tanya saran rusak di tengah." }
+        ]
+    },
+    "ria123": { 
+        nama: "RIA RAPPANG", l: 88, r: 82, w: 74, t: 244,
+        esai: [
+            { no: "78", w: "你教室有多少个留学生法语?", c: "你的班有多少个法国留学生?", n: "Grammar: Struktur identitas bahasa/negara terbalik di belakang." },
+            { no: "80", w: "商店在银行中国旁边。", c: "商店在中国银行旁边。", n: "Grammar: Hukum DM terbalik (Nama negara harus di depan 银行)." },
+            { no: "83", w: "我有一西瓜、还有两草莓。", c: "我有一个西瓜,还有两个草莓", n: "Grammar: Angka langsung bertemu benda wajib disisipi kata 个." },
+            { no: "85", w: "我们都怎么一起去学校?", c: "调整为：我们一起去学校怎么样?", n: "Grammar: Pola kalimat tanya saran di tengah keliru." },
+            { no: "92", w: "他们是都医生吗?", c: "他们统一都是... -> 他们都是...", n: "Grammar: Kata 都 harus diletakkan sebelum kata 是." }
+        ]
+    },
+    "yadi123": { 
+        nama: "RIYADI", l: 88, r: 92, w: 96, t: 276,
+        esai: [
+            { no: "100", w: "米饭对吗她们喜欢吃", c: "她们喜欢吃米饭对吗?", n: "Grammar: Urutan susun kata acak-acakan di akhir baris." }
+        ]
+    },
+    "evi123": { 
+        nama: "SARDEVI KARTIKA SARI", l: 76, r: 80, w: 68, t: 224,
+        esai: [
+            { no: "77", w: "他们也学习韩语吗?", c: "他们也学习英语吗?", n: "Kosakata: Menerjemahkan bahasa Inggris menjadi Bahasa Korea." },
+            { no: "78", w: "法国的留学生有多少在你的教师?", c: "你的班...", n: "Kosakata/Grammar: Memakai kata 教师 dan tempat ditaruh di belakang." },
+            { no: "81", w: "有一个卫生间在体育中心里边", c: "体育馆里有一个卫生间", n: "Grammar: Pola lokasi terbalik, tempat wajib disebut di depan." },
+            { no: "83", w: "我有一个西瓜也两个草莓", c: "....还有两个草莓", n: "Kosakata: Menambah objek baru di kalimat positif menggunakan 还有." },
+            { no: "93", w: "商店去不想儿子", c: "儿子不想去商店", n: "Grammar: Urutan menyusun kalimat acak-acakan." },
+            { no: "95", w: "钱一杯水多少?", c: "一杯水多少钱?", n: "Grammar: Urutan struktur tanya harga terbalik." },
+            { no: "98", w: "猫有一只桌子下边", c: "桌子下边有一只猫", n: "Grammar: Keterangan lokasi harus di depan sebelum subjek hewan." },
+            { no: "99", w: "十月十号是生日的朋友", c: "....是朋友的生日", n: "Grammar: Struktur kepemilikan terbalik (Hukum DM mandarin)." },
+            { no: "100", w: "她们喜欢米饭吃对吗", c: "她们喜欢吃米饭对吗?", n: "Grammar: Kata kerja 吃 harus di depan objek makanan 米饭." }
+        ]
+    },
+    "sindi123": { 
+        nama: "SINDI AULIA", l: 72, r: 90, w: 84, t: 246,
+        esai: [
+            { no: "78", w: "你的班几个法国留学生?", c: "你的班有多少个法国留学生?", n: "Grammar: Kurang kata tanya 'berapa banyak' (yardi/有多少)." },
+            { no: "80", w: "商店在中银行旁边", c: "商店在中国银行旁边", n: "Kosakata: Penulisan nama bank terpotong." },
+            { no: "85", w: "我们怎么样一起去学校?", c: "我们一起去学校怎么样?", n: "Grammar: Kata tanya 怎么样 wajib diletakkan di akhir kalimat." }
+        ]
+    },
+    "man123": { 
+        nama: "SURAHMAN", l: 96, r: 86, w: 68, t: 250,
+        esai: [
+            { no: "78", w: "你的教师有多少级法国人留学生", c: "你的班有多少个法国留学生?", n: "Kosakata: Memakai kata 教师, 多少级, dan frasa negara terbalik." },
+            { no: "79", w: "我想买一个公斤苹果", c: "我想买一公斤苹果", n: "Grammar: Double kata satuan (buang kata 个)." },
+            { no: "80", w: "中国银行旁边有商店", c: "商店在中国银行旁边", n: "Grammar: Sebenarnya berterima, namun membalik subjek utama dari soal asli." },
+            { no: "90", w: "你的学校有个多少学生?", c: "你的学校有多少个学生?", n: "Grammar: Kata tanya 多少 wajib di depan kata satuan 个." },
+            { no: "91", w: "his 两个有哥哥爸爸", c: "his 爸爸有两个哥哥", n: "Grammar: Struktur susun kata acak-acakan di hubungan keluarga." },
+            { no: "93", w: "商店不想去儿子", c: "儿子不想去商店", n: "Grammar: Struktur subjek utama terbalik ke ekor kalimat." },
+            { no: "100", w: "她们喜欢米饭吃对吗", c: "她们喜欢吃米饭对吗?", n: "Grammar: Kata kerja 吃 harus mendahului objek makanan 米饭." }
+        ]
+    }
+};
+
+function cekNilai() {
+    const inputPin = document.getElementById("pinInput").value.trim();
+    const resultBox = document.getElementById("resultBox");
+    const errorMsg = document.getElementById("errorMessage");
+    const esaiList = document.getElementById("esaiList");
+    const esaiBox = document.getElementById("esaiBox");
+
+    if (dataSiswa[inputPin]) {
+        errorMsg.style.display = "none";
+        
+        document.getElementById("resNama").innerText = dataSiswa[inputPin].nama;
+        document.getElementById("resL").innerText = dataSiswa[inputPin].l;
+        document.getElementById("resR").innerText = dataSiswa[inputPin].r;
+        document.getElementById("resW").innerText = dataSiswa[inputPin].w;
+        document.getElementById("resTotal").innerText = dataSiswa[inputPin].t;
+        
+        esaiList.innerHTML = "";
+        const esaiData = dataSiswa[inputPin].esai;
+        
+        if (esaiData && esaiData.length > 0) {
+            esaiBox.style.display = "block";
+            esaiData.forEach(item => {
+                const div = document.createElement("div");
+                div.className = "esai-item";
+                div.innerHTML = `
+                    <div><span class="soal-num">No. Soal ${item.no}</span></div>
+                    ❌ Salah: <span class="wrong">${item.w}</span><br>
+                    ✅ Koreksi: <span class="correct">${item.c}</span><br>
+                    <span class="note">💡 Catatan: ${item.n}</span>
+                `;
+                esaiList.appendChild(div);
+            });
+        } else {
+            esaiBox.style.display = "none";
+        }
+
+        resultBox.style.display = "block";
+    } else {
+        resultBox.style.display = "none";
+        errorMsg.style.display = "block";
+    }
+}
+</script>
+
+</body>
+</html>
